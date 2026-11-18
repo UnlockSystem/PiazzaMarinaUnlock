@@ -113,7 +113,7 @@
         <input type="password" id="admin_password" value="SUPER_ADMIN_PASS_99" placeholder="Inserisci password admin">
 
         <label for="email_utente">Email Ospite:</label>
-        <input type="email_email" id="email_utente" placeholder="ospite@example.com">
+        <input type="email" id="email_utente" placeholder="ospite@example.com">
 
         <label for="codice_generato">Codice Univoco (6 cifre):</label>
         <div style="display: flex; gap: 10px;">
@@ -162,6 +162,7 @@
     const topicAdminStatus = 'casa99-siracusa/s3-garage-xyz789/admin/status';
 
     let client = mqtt.connect(mqttBroker);
+    let listaTemporanea = []; // Array per accumulare i mini-pacchetti in arrivo
 
     client.on('connect', function () {
         console.log('Connesso al broker MQTT');
@@ -174,9 +175,26 @@
         if (topic === topicAdminStatus) {
             try {
                 const data = JSON.parse(payload.toString());
-                aggiornaTabella(data.prenotazioni);
+                
+                // Gestione della ricezione a mini-pacchetti
+                if (data.tipo === "inizio") {
+                    listaTemporanea = [];
+                    console.log("📥 Inizio ricezione lista. Totale atteso:", data.totale);
+                } 
+                else if (data.tipo === "item") {
+                    listaTemporanea.push({
+                        email: data.email,
+                        codice: data.codice,
+                        start: data.start,
+                        end: data.end
+                    });
+                } 
+                else if (data.tipo === "fine") {
+                    console.log("🏁 Ricezione completata. Aggiorno la tabella.");
+                    aggiornaTabella(listaTemporanea);
+                }
             } catch (e) {
-                console.error("Errore parsing stato admin:", e);
+                console.error("Errore parsing JSON status:", e);
             }
         }
     });
