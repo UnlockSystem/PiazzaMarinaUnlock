@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pannello Admin - Prenotazioni</title>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .card {
+            background: #1e293b;
+            padding: 25px;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        label { font-size: 13px; color: #94a3b8; display: block; margin-top: 10px; }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border-radius: 8px;
+            border: 1px solid #475569;
+            background: #0f172a;
+            color: white;
+            font-size: 15px;
+            box-sizing: border-box;
+        }
+        .code-box { display: flex; gap: 10px; }
+        .code-box input { text-align: center; font-weight: bold; letter-spacing: 2px; }
+        button {
+            background-color: #3b82f6;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            margin-top: 15px;
+            padding: 14px;
+        }
+        button:hover { background-color: #2563eb; }
+        #status { margin-top: 15px; font-size: 14px; text-align: center; color: #10b981; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Nuova Prenotazione</h2>
+    
+    <label>Password Admin</label>
+    <input type="password" id="adminPass" placeholder="Password Admin">
+    
+    <label>Email Cliente</label>
+    <input type="email" id="emailUtente" placeholder="utente@email.com">
+    
+    <label>Codice Univoco Generato</label>
+    <div class="code-box">
+        <input type="text" id="codiceUnivoco" readonly>
+        <button type="button" onclick="generaCodice()" style="margin-top:0; width: 120px; background: #475569;">Rigenera</button>
+    </div>
+
+    <label>Data e Ora Inizio</label>
+    <input type="datetime-local" id="dataInizio">
+
+    <label>Data e Ora Fine (Scadenza)</label>
+    <input type="datetime-local" id="dataFine">
+    
+    <button onclick="inviaPrenotazione()">Registra e Invia Email dall'ESP32</button>
+    <div id="status">Connessione broker...</div>
+</div>
+
+<script>
+    const brokerUrl = 'wss://broker.emqx.io:8084/mqtt';
+    const topicAdmin = 'casa99-siracusa/s3-garage-xyz789/admin';
+
+    const client = mqtt.connect(brokerUrl, {
+        clientId: 'admin_client_' + Math.random().toString(16).substr(2, 8)
+    });
+
+    const statusEl = document.getElementById('status');
+
+    client.on('connect', () => {
+        statusEl.innerText = '🟢 Connesso al broker MQTT';
+    });
+
+    function generaCodice() {
+        const randomCode = Math.floor(100000 + Math.random() * 900000).toString();
+        document.getElementById('codiceUnivoco').value = randomCode;
+    }
+    generaCodice();
+
+    function inviaPrenotazione() {
+        const adminSecret = document.getElementById('adminPass').value;
+        const email = document.getElementById('emailUtente').value;
+        const codice = document.getElementById('codiceUnivoco').value;
+        const startStrInput = document.getElementById('dataInizio').value;
+        const endStrInput = document.getElementById('dataFine').value;
+
+        if (!adminSecret || !email || !startStrInput || !endStrInput) {
+            alert('Compila tutti i campi!');
+            return;
+        }
+
+        const startTs = Math.floor(new Date(startStrInput).getTime() / 1000);
+        const endTs = Math.floor(new Date(endStrInput).getTime() / 1000);
+
+        if (endTs <= startTs) {
+            alert('La data di fine deve essere successiva a quella di inizio!');
+            return;
+        }
+
+        const payload = JSON.stringify({
+            admin_secret: adminSecret,
+            email: email,
+            codice: codice,
+            start_ts: startTs,
+            end_ts: endTs,
+            start_str: startStrInput.replace('T', ' '),
+            end_str: endStrInput.replace('T', ' ')
+        });
+
+        client.publish(topicAdmin, payload, () => {
+            statusEl.innerText = `✅ Comando inviato! L'ESP32 sta spedendo la mail...`;
+        });
+    }
+</script>
+
+</body>
+</html>
