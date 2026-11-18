@@ -76,6 +76,24 @@
     <button onclick="inviaPrenotazione()">Registra e Invia Email</button>
     <div id="status">Connessione...</div>
 </div>
+    <div class="card" style="margin-top: 20px; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+    <h3>🔑 Prenotazioni Attive</h3>
+    <button onclick="richiediLista()" style="background: #2563eb; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; margin-bottom: 15px;">Aggiorna Elenco</button>
+    
+    <table style="width: 100%; border-collapse: collapse; text-align: left;">
+        <thead>
+            <tr style="border-bottom: 2px solid #e2e8f0; color: #64748b;">
+                <th style="padding: 10px;">Email</th>
+                <th style="padding: 10px;">Codice</th>
+                <th style="padding: 10px;">Scadenza</th>
+                <th style="padding: 10px;">Azione</th>
+            </tr>
+        </thead>
+        <tbody id="tabella-prenotazioni">
+            <tr><td colspan="4" style="text-align: center; padding: 15px; color: #94a3b8;">Clicca su "Aggiorna Elenco" per caricare le chiavi attive.</td></tr>
+        </tbody>
+    </table>
+</div>
 
 <script>
     const brokerUrl = 'wss://broker.emqx.io:8084/mqtt';
@@ -131,6 +149,68 @@
             statusEl.innerText = `✅ Comando inviato!`;
         });
     }
+    const topicAdminStatus = 'casa99-siracusa/s3-garage-xyz789/admin/status';
+
+// Quando il client MQTT si connette, si iscrive anche al topic di stato
+client.on('connect', function () {
+    console.log('Connesso al broker MQTT');
+    client.subscribe(topicAdminStatus);
+    richiediLista(); // Carica la lista all'avvio
+});
+
+client.on('message', function (topic, payload) {
+    if (topic === topicAdminStatus) {
+        const data = JSON.parse(payload.toString());
+        aggiornaTabella(data.prenotazioni);
+    }
+});
+
+function richiediLista() {
+    const adminSecret = document.getElementById('admin_password').value; // Assicurati che l'input password admin abbia questo ID
+    const payload = JSON.stringify({
+        admin_secret: adminSecret,
+        azione: "get_list"
+    });
+    client.publish(topicAdmin, payload);
+}
+
+function revocaCodice(codiceDaEliminare) {
+    const adminSecret = document.getElementById('admin_password').value;
+    if (!confirm(`Vuoi davvero revocare in anticipo il codice ${codiceDaEliminare}?`)) return;
+
+    const payload = JSON.stringify({
+        admin_secret: adminSecret,
+        azione: "elimina",
+        codice: codiceDaEliminare
+    });
+    client.publish(topicAdmin, payload);
+    
+    // Richiedi subito l'aggiornamento della lista dopo un breve delay
+    setTimeout(richiediLista, 800);
+}
+
+function aggiornaTabella(prenotazioni) {
+    const tbody = document.getElementById('tabella-prenotazioni');
+    tbody.innerHTML = '';
+
+    if (!prenotazioni || prenotazioni.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 15px; color: #94a3b8;">Nessuna prenotazione attiva.</td></tr>';
+        return;
+    }
+
+    prenotazioni.forEach(p => {
+        const dataScadenza = new Date(p.end * 1000).toLocaleString();
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid #f1f5f9';
+        tr.innerHTML = `
+            <td style="padding: 10px;">${p.email}</td>
+            <td style="padding: 10px; font-weight: bold; font-family: monospace;">${p.codice}</td>
+            <td style="padding: 10px;">${dataScadenza}</td>
+            <td style="padding: 10px;"><button onclick="revocaCodice('${p.codice}')" style="background: #ef4444; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer;">Revoca</button></td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
 </script>
 
 </body>
