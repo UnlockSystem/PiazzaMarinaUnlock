@@ -88,7 +88,7 @@
     const statusEl = document.getElementById('status');
 
     client.on('connect', () => {
-        statusEl.innerText = '🟢 Connesso al broker MQTT';
+        statusEl.innerText = '🟢 Connesso';
     });
 
     function generaCodice() {
@@ -128,7 +128,7 @@
         });
 
         client.publish(topicAdmin, payload, () => {
-            statusEl.innerText = `✅ Comando inviato! L'ESP32 sta spedendo la mail...`;
+            statusEl.innerText = `✅ Comando inviato!`;
         });
     }
 </script>
