@@ -72,7 +72,7 @@
     // Configurazione Broker MQTT (esempio broker pubblico EMQX con WSS)
     // Per uso reale usa un'istanza gratuita privata su HiveMQ Cloud o EMQX Cloud con user/password
     const brokerUrl = 'wss://broker.emqx.io:8084/mqtt';
-    const topicComando = 'casa/accessi/comando/tuo_codice_segreto_9988';
+    const topicComando = 'casa99-siracusa/s3-garage-xyz789/comando';
 
     const client = mqtt.connect(brokerUrl, {
         clientId: 'web_client_' + Math.random().toString(16).substr(2, 8)
