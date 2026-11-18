@@ -3,214 +3,291 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pannello Admin - Prenotazioni</title>
+    <title>Pannello Admin - Controllo Accessi</title>
+    <!-- Inclusione libreria MQTT via CDN -->
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <style>
         body {
-            font-family: system-ui, sans-serif;
-            background-color: #0f172a;
-            color: #f8fafc;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f1f5f9;
+            color: #1e293b;
             margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 700px;
+            margin: auto;
         }
         .card {
-            background: #1e293b;
+            background: #ffffff;
             padding: 25px;
-            border-radius: 16px;
-            width: 100%;
-            max-width: 400px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
         }
-        label { font-size: 13px; color: #94a3b8; display: block; margin-top: 10px; }
+        h2, h3 {
+            margin-top: 0;
+            color: #0f172a;
+        }
+        label {
+            display: block;
+            margin-top: 12px;
+            font-weight: 600;
+            font-size: 14px;
+        }
         input, button {
             width: 100%;
-            padding: 10px;
-            margin-top: 5px;
+            padding: 12px;
+            margin-top: 6px;
+            border: 1px solid #cbd5e1;
             border-radius: 8px;
-            border: 1px solid #475569;
-            background: #0f172a;
-            color: white;
-            font-size: 15px;
             box-sizing: border-box;
+            font-size: 15px;
         }
-        .code-box { display: flex; gap: 10px; }
-        .code-box input { text-align: center; font-weight: bold; letter-spacing: 2px; }
         button {
-            background-color: #3b82f6;
+            background-color: #2563eb;
+            color: white;
+            border: none;
             font-weight: bold;
             cursor: pointer;
-            border: none;
-            margin-top: 15px;
-            padding: 14px;
+            margin-top: 20px;
+            transition: background 0.2s;
         }
-        button:hover { background-color: #2563eb; }
-        #status { margin-top: 15px; font-size: 14px; text-align: center; color: #10b981; }
+        button:hover {
+            background-color: #1d4ed8;
+        }
+        .btn-secondary {
+            background-color: #475569;
+            width: auto;
+            padding: 8px 16px;
+            margin-top: 0;
+        }
+        .btn-secondary:hover {
+            background-color: #334155;
+        }
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: 500;
+            display: none;
+        }
+        .success { background-color: #d1fae5; color: #065f46; }
+        .error { background-color: #fee2e2; color: #991b1b; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            text-align: left;
+        }
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 14px;
+        }
+        th {
+            color: #64748b;
+            background-color: #f8fafc;
+        }
+        .btn-danger {
+            background-color: #ef4444;
+            width: auto;
+            padding: 6px 12px;
+            margin-top: 0;
+            font-size: 13px;
+        }
+        .btn-danger:hover {
+            background-color: #dc2626;
+        }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h2>Nuova Prenotazione</h2>
-    
-    <label>Password Admin</label>
-    <input type="password" id="adminPass" placeholder="Password Admin">
-    
-    <label>Email Cliente</label>
-    <input type="email" id="emailUtente" placeholder="utente@email.com">
-    
-    <label>Codice Univoco Generato</label>
-    <div class="code-box">
-        <input type="text" id="codiceUnivoco" readonly>
-        <button type="button" onclick="generaCodice()" style="margin-top:0; width: 120px; background: #475569;">Rigenera</button>
+<div class="container">
+    <!-- Sezione Generazione Nuova Prenotazione -->
+    <div class="card">
+        <h2>🛠️ Genera Nuova Prenotazione</h2>
+        
+        <label for="admin_password">Password Admin:</label>
+        <input type="password" id="admin_password" value="SUPER_ADMIN_PASS_99" placeholder="Inserisci password admin">
+
+        <label for="email_utente">Email Ospite:</label>
+        <input type="email_email" id="email_utente" placeholder="ospite@example.com">
+
+        <label for="codice_generato">Codice Univoco (6 cifre):</label>
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="codice_generato" readonly style="background: #f8fafc; font-family: monospace; font-weight: bold; font-size: 18px; letter-spacing: 2px;">
+            <button type="button" onclick="generaCodiceCasuale()" style="width: 140px; margin-top: 6px;">Genera</button>
+        </div>
+
+        <label for="data_inizio">Inizio Validità:</label>
+        <input type="datetime-local" id="data_inizio">
+
+        <label for="data_fine">Fine Validità (Scadenza):</label>
+        <input type="datetime-local" id="data_fine">
+
+        <button onclick="inviaPrenotazione()">Crea Prenotazione e Invia Email</button>
+        
+        <div id="status-msg" class="status"></div>
     </div>
 
-    <label>Data e Ora Inizio</label>
-    <input type="datetime-local" id="dataInizio">
-
-    <label>Data e Ora Fine (Scadenza)</label>
-    <input type="datetime-local" id="dataFine">
-    
-    <button onclick="inviaPrenotazione()">Registra e Invia Email</button>
-    <div id="status">Connessione...</div>
-</div>
-    <div class="card" style="margin-top: 20px; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-    <h3>🔑 Prenotazioni Attive</h3>
-    <button onclick="richiediLista()" style="background: #2563eb; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; margin-bottom: 15px;">Aggiorna Elenco</button>
-    
-    <table style="width: 100%; border-collapse: collapse; text-align: left;">
-        <thead>
-            <tr style="border-bottom: 2px solid #e2e8f0; color: #64748b;">
-                <th style="padding: 10px;">Email</th>
-                <th style="padding: 10px;">Codice</th>
-                <th style="padding: 10px;">Scadenza</th>
-                <th style="padding: 10px;">Azione</th>
-            </tr>
-        </thead>
-        <tbody id="tabella-prenotazioni">
-            <tr><td colspan="4" style="text-align: center; padding: 15px; color: #94a3b8;">Clicca su "Aggiorna Elenco" per caricare le chiavi attive.</td></tr>
-        </tbody>
-    </table>
+    <!-- Sezione Gestione Prenotazioni Attive -->
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3 style="margin: 0;">🔑 Prenotazioni Attive</h3>
+            <button class="btn-secondary" onclick="richiediLista()">Aggiorna Elenco</button>
+        </div>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Email</th>
+                    <th>Codice</th>
+                    <th>Scadenza</th>
+                    <th>Azione</th>
+                </tr>
+            </thead>
+            <tbody id="tabella-prenotazioni">
+                <tr><td colspan="4" style="text-align: center; color: #94a3b8;">Clicca su "Aggiorna Elenco" per caricare le chiavi.</td></tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <script>
-    const brokerUrl = 'wss://broker.emqx.io:8084/mqtt';
+    // Configurazione MQTT (Broker EMQX via WebSockets WSS)
+    const mqttBroker = 'wss://broker.emqx.io:8084/mqtt';
     const topicAdmin = 'casa99-siracusa/s3-garage-xyz789/admin';
+    const topicAdminStatus = 'casa99-siracusa/s3-garage-xyz789/admin/status';
 
-    const client = mqtt.connect(brokerUrl, {
-        clientId: 'admin_client_' + Math.random().toString(16).substr(2, 8)
+    let client = mqtt.connect(mqttBroker);
+
+    client.on('connect', function () {
+        console.log('Connesso al broker MQTT');
+        client.subscribe(topicAdminStatus);
+        // Carica automaticamente la lista all'avvio
+        setTimeout(richiediLista, 1000);
     });
 
-    const statusEl = document.getElementById('status');
-
-    client.on('connect', () => {
-        statusEl.innerText = '🟢 Connesso';
+    client.on('message', function (topic, payload) {
+        if (topic === topicAdminStatus) {
+            try {
+                const data = JSON.parse(payload.toString());
+                aggiornaTabella(data.prenotazioni);
+            } catch (e) {
+                console.error("Errore parsing stato admin:", e);
+            }
+        }
     });
 
-    function generaCodice() {
-        const randomCode = Math.floor(100000 + Math.random() * 900000).toString();
-        document.getElementById('codiceUnivoco').value = randomCode;
+    // Funzione per generare un codice casuale di 6 cifre
+    function generaCodiceCasuale() {
+        const randomCode = Math.floor(100000 + Math.random() * 900000);
+        document.getElementById('codice_generato').value = randomCode;
     }
-    generaCodice();
 
+    // Imposta date predefinite all'apertura della pagina (Adesso -> +24 ore)
+    window.onload = function() {
+        generaCodiceCasuale();
+        const now = new Date();
+        const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+        
+        document.getElementById('data_inizio').value = now.toISOString().slice(0, 16);
+        document.getElementById('data_fine').value = tomorrow.toISOString().slice(0, 16);
+    };
+
+    function mostraMessaggio(testo, tipo) {
+        const msgEl = document.getElementById('status-msg');
+        msgEl.innerText = testo;
+        msgEl.className = 'status ' + tipo;
+        msgEl.style.display = 'block';
+        setTimeout(() => { msgEl.style.display = 'none'; }, 4000);
+    }
+
+    // Invio nuova prenotazione all'ESP32
     function inviaPrenotazione() {
-        const adminSecret = document.getElementById('adminPass').value;
-        const email = document.getElementById('emailUtente').value;
-        const codice = document.getElementById('codiceUnivoco').value;
-        const startStrInput = document.getElementById('dataInizio').value;
-        const endStrInput = document.getElementById('dataFine').value;
+        const adminSecret = document.getElementById('admin_password').value;
+        const email = document.getElementById('email_utente').value;
+        const codice = document.getElementById('codice_generato').value;
+        const startStrVal = document.getElementById('data_inizio').value;
+        const endStrVal = document.getElementById('data_fine').value;
 
-        if (!adminSecret || !email || !startStrInput || !endStrInput) {
-            alert('Compila tutti i campi!');
+        if (!email || !codice || !startStrVal || !endStrVal) {
+            moestraMessaggio('Compila tutti i campi!', 'error');
             return;
         }
 
-        const startTs = Math.floor(new Date(startStrInput).getTime() / 1000);
-        const endTs = Math.floor(new Date(endStrInput).getTime() / 1000);
-
-        if (endTs <= startTs) {
-            alert('La data di fine deve essere successiva a quella di inizio!');
-            return;
-        }
+        const startTs = Math.floor(new Date(startStrVal).getTime() / 1000);
+        const endTs = Math.floor(new Date(endStrVal).getTime() / 1000);
 
         const payload = JSON.stringify({
             admin_secret: adminSecret,
+            azione: "crea",
             email: email,
             codice: codice,
             start_ts: startTs,
             end_ts: endTs,
-            start_str: startStrInput.replace('T', ' '),
-            end_str: endStrInput.replace('T', ' ')
+            start_str: startStrVal.replace('T', ' '),
+            end_str: endStrVal.replace('T', ' ')
         });
 
-        client.publish(topicAdmin, payload, () => {
-            statusEl.innerText = `✅ Comando inviato!`;
+        client.publish(topicAdmin, payload, {}, (err) => {
+            if (!err) {
+                mostraMessaggio('✅ Richiesta inviata con successo!', 'success');
+                setTimeout(richiediLista, 1500);
+            } else {
+                mostraMessaggio('❌ Errore nell\'invio del comando MQTT', 'error');
+            }
         });
     }
-    const topicAdminStatus = 'casa99-siracusa/s3-garage-xyz789/admin/status';
 
-// Quando il client MQTT si connette, si iscrive anche al topic di stato
-client.on('connect', function () {
-    console.log('Connesso al broker MQTT');
-    client.subscribe(topicAdminStatus);
-    richiediLista(); // Carica la lista all'avvio
-});
-
-client.on('message', function (topic, payload) {
-    if (topic === topicAdminStatus) {
-        const data = JSON.parse(payload.toString());
-        aggiornaTabella(data.prenotazioni);
-    }
-});
-
-function richiediLista() {
-    const adminSecret = document.getElementById('admin_password').value; // Assicurati che l'input password admin abbia questo ID
-    const payload = JSON.stringify({
-        admin_secret: adminSecret,
-        azione: "get_list"
-    });
-    client.publish(topicAdmin, payload);
-}
-
-function revocaCodice(codiceDaEliminare) {
-    const adminSecret = document.getElementById('admin_password').value;
-    if (!confirm(`Vuoi davvero revocare in anticipo il codice ${codiceDaEliminare}?`)) return;
-
-    const payload = JSON.stringify({
-        admin_secret: adminSecret,
-        azione: "elimina",
-        codice: codiceDaEliminare
-    });
-    client.publish(topicAdmin, payload);
-    
-    // Richiedi subito l'aggiornamento della lista dopo un breve delay
-    setTimeout(richiediLista, 800);
-}
-
-function aggiornaTabella(prenotazioni) {
-    const tbody = document.getElementById('tabella-prenotazioni');
-    tbody.innerHTML = '';
-
-    if (!prenotazioni || prenotazioni.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 15px; color: #94a3b8;">Nessuna prenotazione attiva.</td></tr>';
-        return;
+    // Richiedi la lista delle prenotazioni attive
+    function richiediLista() {
+        const adminSecret = document.getElementById('admin_password').value;
+        const payload = JSON.stringify({
+            admin_secret: adminSecret,
+            azione: "get_list"
+        });
+        client.publish(topicAdmin, payload);
     }
 
-    prenotazioni.forEach(p => {
-        const dataScadenza = new Date(p.end * 1000).toLocaleString();
-        const tr = document.createElement('tr');
-        tr.style.borderBottom = '1px solid #f1f5f9';
-        tr.innerHTML = `
-            <td style="padding: 10px;">${p.email}</td>
-            <td style="padding: 10px; font-weight: bold; font-family: monospace;">${p.codice}</td>
-            <td style="padding: 10px;">${dataScadenza}</td>
-            <td style="padding: 10px;"><button onclick="revocaCodice('${p.codice}')" style="background: #ef4444; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer;">Revoca</button></td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
+    // Revoca anticipata di una chiave
+    function revocaCodice(codiceDaEliminare) {
+        const adminSecret = document.getElementById('admin_password').value;
+        if (!confirm(`Vuoi davvero revocare in anticipo il codice ${codiceDaEliminare}?`)) return;
+
+        const payload = JSON.stringify({
+            admin_secret: adminSecret,
+            azione: "elimina",
+            codice: codiceDaEliminare
+        });
+        client.publish(topicAdmin, payload);
+        setTimeout(richiediLista, 800);
+    }
+
+    // Popola la tabella HTML con i dati ricevuti dall'ESP32
+    function aggiornaTabella(prenotazioni) {
+        const tbody = document.getElementById('tabella-prenotazioni');
+        tbody.innerHTML = '';
+
+        if (!prenotazioni || prenotazioni.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #94a3b8;">Nessuna prenotazione attiva.</td></tr>';
+            return;
+        }
+
+        prenotazioni.forEach(p => {
+            const dataScadenza = new Date(p.end * 1000).toLocaleString();
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${p.email}</td>
+                <td style="font-weight: bold; font-family: monospace;">${p.codice}</td>
+                <td>${dataScadenza}</td>
+                <td><button class="btn-danger" onclick="revocaCodice('${p.codice}')">Revoca</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
 </script>
 
 </body>
