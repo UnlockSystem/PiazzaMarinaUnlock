@@ -91,21 +91,23 @@
     });
 
     function inviaComando(target) {
-        const pin = document.getElementById('pin').value;
-        if (!pin) {
-            alert('Inserisci il PIN!');
+        // Legge il codice inserito dall'input
+        const codiceInserito = document.getElementById('pin').value;
+        if (!codiceInserito) {
+            alert('Inserisci il codice!');
             return;
         }
 
-        // Invia il payload in formato JSON con PIN + Target
+        // Crea il payload JSON usando la chiave "codice" (esattamente come l'ESP32)
         const payload = JSON.stringify({
-            pin: pin,
+            codice: codiceInserito,
             azione: target
         });
 
+        // Pubblica sul topic dei comandi
         client.publish(topicComando, payload);
-        statusEl.innerText = `Comando ${target} inviato...`;
         
+        statusEl.innerText = `Comando ${target} inviato...`;
         setTimeout(() => {
             statusEl.innerText = '🟢 Connesso e pronto';
         }, 2500);
