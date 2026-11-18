@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controllo Accessi</title>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            gap: 20px;
+        }
+        .card {
+            background: #1e1e1e;
+            padding: 25px;
+            border-radius: 16px;
+            width: 85%;
+            max-width: 350px;
+            text-align: center;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            background: #2a2a2a;
+            color: white;
+            font-size: 18px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 18px;
+            margin: 8px 0;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+        button:active { transform: scale(0.97); }
+        .btn-portone { background-color: #2563eb; color: white; }
+        .btn-porta { background-color: #10b981; color: white; }
+        #status { font-size: 14px; color: #9ca3af; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Controllo Accessi</h2>
+    <input type="password" id="pin" placeholder="Inserisci PIN" inputmode="numeric">
+    
+    <button class="btn-portone" onclick="inviaComando('PORTONE')">APRI PORTONE</button>
+    <button class="btn-porta" onclick="inviaComando('PORTA')">APRI PORTA</button>
+    
+    <div id="status">Connessione al broker...</div>
+</div>
+
+<script>
+    // Configurazione Broker MQTT (esempio broker pubblico EMQX con WSS)
+    // Per uso reale usa un'istanza gratuita privata su HiveMQ Cloud o EMQX Cloud con user/password
+    const brokerUrl = 'wss://broker.emqx.io:8084/mqtt';
+    const topicComando = 'casa/accessi/comando/tuo_codice_segreto_9988';
+
+    const client = mqtt.connect(brokerUrl, {
+        clientId: 'web_client_' + Math.random().toString(16).substr(2, 8)
+    });
+
+    const statusEl = document.getElementById('status');
+
+    client.on('connect', () => {
+        statusEl.innerText = '🟢 Connesso e pronto';
+        statusEl.style.color = '#10b981';
+    });
+
+    client.on('error', (err) => {
+        statusEl.innerText = '🔴 Errore connessione';
+        statusEl.style.color = '#ef4444';
+    });
+
+    function inviaComando(target) {
+        const pin = document.getElementById('pin').value;
+        if (!pin) {
+            alert('Inserisci il PIN!');
+            return;
+        }
+
+        // Invia il payload in formato JSON con PIN + Target
+        const payload = JSON.stringify({
+            pin: pin,
+            azione: target
+        });
+
+        client.publish(topicComando, payload);
+        statusEl.innerText = `Comando ${target} inviato...`;
+        
+        setTimeout(() => {
+            statusEl.innerText = '🟢 Connesso e pronto';
+        }, 2500);
+    }
+</script>
+
+</body>
+</html>
