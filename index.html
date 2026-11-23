@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controllo Accessi</title>
+    <title>Piazza Marina</title>
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <style>
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background-color: #121212;
+            background-color: #E59C20;
             color: #ffffff;
             display: flex;
             flex-direction: column;
@@ -19,13 +19,19 @@
             gap: 20px;
         }
         .card {
-            background: #1e1e1e;
+            background: #3A4F30;
             padding: 25px;
             border-radius: 16px;
             width: 85%;
             max-width: 350px;
             text-align: center;
             box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        }
+        h2 {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
         }
         input {
             width: 100%;
@@ -59,7 +65,9 @@
 <body>
 
 <div class="card">
-    <h2>Controllo Accessi</h2>
+    <h2>
+        <img src="piazza-marina-logo.png" alt="Piazza Marina" class="icona-titolo">
+    </h2>
     <input type="password" id="pin" placeholder="Inserisci PIN" inputmode="numeric">
     
     <button class="btn-portone" onclick="inviaComando('PORTONE')">APRI PORTONE</button>
