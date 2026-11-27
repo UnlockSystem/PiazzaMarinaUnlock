@@ -110,28 +110,10 @@
 
     function inviaComando(target) {
         const codiceInserito = document.getElementById('pin').value.trim();
-
-        if (!/^\d{6}$/.test(codiceInserito)) {
-            alert('⚠️ Codice non valido: inserisci un PIN numerico da 6 cifre.');
+        if (!codiceInserito) {
+            alert('Inserisci il codice!');
             return;
         }
-
-        if (!client.connected) {
-            alert('❌ Non connesso al broker MQTT. Riprova tra un attimo.');
-            return;
-        }
-
-        const payload = JSON.stringify({
-            codice: codiceInserito,
-            azione: target
-        });
-
-        client.publish(topicComando, payload);
-        statusEl.innerText = `Comando ${target} inviato...`;
-        setTimeout(() => {
-            if (client.connected) statusEl.innerText = '🟢 Connesso e pronto';
-        }, 2500);
-    }
 
         if (!client.connected) {
             statusEl.innerText = '🔴 Non connesso al broker, riprova tra un attimo';
